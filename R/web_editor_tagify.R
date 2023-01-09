@@ -10,30 +10,32 @@ library(d3r)
 library(quanteda) # only used for dictionary examples
 
 dictfile <- tempfile()
-download.file("https://provalisresearch.com/Download/LaverGarry.zip",dictfile, mode = "wb")
+download.file("https://provalisresearch.com/Download/LaverGarry.zip",
+              dictfile,
+              mode = "wb")
 unzip(dictfile, exdir = (td <- tempdir()))
 dict2 <- dictionary(file = paste(td, "LaverGarry.cat", sep = "/"))
 dict_hier <- convert_dict_hier(dict2)
 
-browsable(
-  tagList(
-    d3r::d3_dep_v7(),
-    # I do not think we need but include for experimentation
-    #   as of now we write our own d3 hierarchy to yaml conversion
-    tags$head(
-      tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"),
-      tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify"),
-      tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"),
-      tags$link(href = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css", rel="stylesheet", type="text/css")
-    ),
+html_block <- tagList(
+  d3r::d3_dep_v7(),
+  # I do not think we need but include for experimentation
+  #   as of now we write our own d3 hierarchy to yaml conversion
+  tags$head(
+    tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"),
+    tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify"),
+    tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"),
+    tags$link(href = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css", rel =
+                "stylesheet", type = "text/css")
+  ),
+  div(
+    style = "display: flex;",
+    div(id = "hierlist", style = "width: 50%; margin-right:50px;"),
     div(
-      style = "display: flex;",
-      div(id = "hierlist", style = "width: 50%; margin-right:50px;"),
-      div(
-        style = "min-width:50%",
-        htmlwidgets::onRender(
-          monaco::monaco("", language = "yaml", width = "100%"),
-"() => {
+      style = "min-width:50%",
+      htmlwidgets::onRender(
+        monaco::monaco("", language = "yaml", width = "100%"),
+        "() => {
   monaco.editor.getModels()[0].onDidChangeContent(function() {
     try {
       const yml = yaml_to_hier(monaco.editor.getModels()[0].getValue())
@@ -42,11 +44,12 @@ browsable(
   })
   monaco.editor.getModels()[0].setValue(hier_to_yaml(hier))
 }"
-        )
       )
-    ),
-    tags$script(HTML(
-"
+    )
+  ),
+tags$script(
+  HTML(
+    "
 // crude but functioning hierarchy to yaml converter
 function hier_to_yaml(hier) {
   let yaml_arr = []
@@ -83,10 +86,11 @@ function yaml_to_hier(yaml) {
   return d3.hierarchy(ym1)
 }
 "
-    )),
-    tags$script(HTML(
-sprintf(
-'
+  )
+),
+tags$script(HTML(
+  sprintf(
+    '
 // unnecessary since we have a flat conversion for data.frame
 //  but keep for now in case we want to use
 const hier = d3.hierarchy(%s)
@@ -140,7 +144,8 @@ function hier_to_dom(hier, selector) {
 }
 ',
 jsonlite::toJSON(dict_hier, auto_unbox = TRUE)
-)
-    ))
   )
+))
 )
+
+browsable(html_block)
