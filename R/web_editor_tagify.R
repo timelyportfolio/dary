@@ -4,7 +4,7 @@
 
 library(htmltools)
 #remotes::install_github("timelyportfolio/dary")
-library(dary)
+# library(dary)
 library(d3r)
 
 library(quanteda) # only used for dictionary examples
@@ -13,7 +13,7 @@ dictfile <- tempfile()
 download.file("https://provalisresearch.com/Download/LaverGarry.zip",dictfile, mode = "wb")
 unzip(dictfile, exdir = (td <- tempdir()))
 dict2 <- dictionary(file = paste(td, "LaverGarry.cat", sep = "/"))
-dict_hier <- dary::convert_dict_hier(dict2)
+dict_hier <- convert_dict_hier(dict2)
 
 browsable(
   tagList(

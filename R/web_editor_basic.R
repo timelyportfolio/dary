@@ -2,15 +2,15 @@ library(bslib)
 library(htmltools)
 library(d3r)
 
-browsable(
-  tagList(
-    d3r::d3_dep_v7(),
-    tags$head(
-      tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify"),
-      tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"),
-      tags$link(href = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css", rel="stylesheet", type="text/css"),
-      tags$script(
-'
+html_block <- tagList(
+  d3r::d3_dep_v7(),
+  tags$head(
+    tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify"),
+    tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"),
+    tags$link(href = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css", rel =
+                "stylesheet", type = "text/css"),
+    tags$script(
+      '
 function delete_group(evt) {
   d3.select(evt.target.parentElement.parentElement).remove()
 }
@@ -51,23 +51,19 @@ function add_group(evt) {
   tagify.addTags(["word1","word2"])
 }
 '
-      )
-    ),
-    tags$div(
-      class="dictionary-builder",
-      style="width: 100%;",
-      tags$div(
-        class="dictionary-builder-tree",
-        style="width: 100%; min-height: 20px;"
-      ),
-      tags$div(
-        style = "margin-top:10px;"),
-        tags$button(
-          class="btn btn-primary",
-          onclick="add_group()",
-          "Add Group"
-        )
-      )
     )
-  )
+  ),
+tags$div(
+  class = "dictionary-builder",
+  style = "width: 100%;",
+  tags$div(class = "dictionary-builder-tree",
+           style = "width: 100%; min-height: 20px;"),
+  tags$div(style = "margin-top:10px;"),
+  tags$button(class = "btn btn-primary",
+              onclick = "add_group()",
+              "Add Group")
 )
+)
+
+
+browsable(html_block)
