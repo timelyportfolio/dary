@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+<script src="lib/d3-7.0.0/d3.min.js"></script>
+<script src="lib/htmlwidgets-1.5.4/htmlwidgets.js"></script>
+<script src="lib/monaco-editor-0.21.2/monaco.min.js"></script>
+<script src="lib/prettier-2.1.2/standalone.js"></script>
+<script src="lib/prettier-2.1.2/parser-babel.js"></script>
+<script src="lib/prettier-2.1.2/parser-html.js"></script>
+<script src="lib/prettier-2.1.2/parser-markdown.js"></script>
+<script src="lib/prettier-2.1.2/parser-postcss.js"></script>
+<script src="lib/prettier-2.1.2/parser-typescript.js"></script>
+<script src="lib/prettier-2.1.2/parser-yaml.js"></script>
+<script src="lib/jquery-3.5.1/jquery.min.js"></script>
+<link href="lib/jQueryModal-0.9.2/jquery.modal.min.css" rel="stylesheet" />
+<script src="lib/jQueryModal-0.9.2/jquery.modal.min.js"></script>
+<link href="lib/sweetalert2-10.5.1/sweetalert2.min.css" rel="stylesheet" />
+<script src="lib/sweetalert2-10.5.1/sweetalert2.min.js"></script>
+<script src="lib/markdown-it-12.0.0/markdown-it.min.js"></script>
+<script src="lib/svg-parser-2.0.4/svg-parser-bundle.js"></script>
+<script src="lib/scale-that-svg-1.0.5/scale-that-svg-bundle.js"></script>
+<script src="lib/panzoom-9.2.5/panzoom.min.js"></script>
+<script src="lib/word-wrap-1.2.3/word-wrap-bundle.js"></script>
+<link href="lib/github-markdown-css-4.0.0/github-markdown.css" rel="stylesheet" />
+<link href="lib/monacoWidget-0.0.0/MW.css" rel="stylesheet" />
+<script src="lib/monacoWidget-0.0.0/MW.js"></script>
+<link href="lib/customRangeInput-1.5.2/customRangeInput.css" rel="stylesheet" />
+<script src="lib/monaco-binding-0.2.2/monaco.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div style="display: flex;">
+  <div id="hierlist" style="width: 50%; margin-right:50px;"></div>
+  <div style="min-width:50%">
+    <div class="monacoWidget">
+      <div id="modalMWMXqFgaCY8gRFZpW" class="modal markdown-body"></div>
+      <div class="monacoWidgetHeader">
+        <div id="checkboxMWMXqFgaCY8gRFZpW" class="check-box-container" style="display: none;">
+          <input id="bookmarkMWMXqFgaCY8gRFZpW" type="checkbox" class="check-box-input" checked=""/>
+          <label for="bookmarkMWMXqFgaCY8gRFZpW" class="check-box" style="margin-right: 0;"></label>
+          <label for="bookmarkMWMXqFgaCY8gRFZpW" class="check-box-label">
+            <span style="color: whitesmoke;">Always bookmark before prettifying</span>
+          </label>
+        </div>
+        <span id="fileNameMWMXqFgaCY8gRFZpW"></span>
+        <div style="clear: both;"></div>
+      </div>
+      <div id="MWMXqFgaCY8gRFZpW" class="monaco html-widget" style="width:100%;height:calc(100vh - 50px);"></div>
+    </div>
+    <script type="application/json" data-for="MWMXqFgaCY8gRFZpW">{"x":{"contents":[""],"language":"yaml","theme":"vs","tabSize":2,"fontSize":14,"header":true,"fileName":"untitled.yaml","fileExtension":"yaml"},"evals":[],"jsHooks":{"render":[{"code":"() => {\n  monaco.editor.getModels()[0].onDidChangeContent(function() {\n    try {\n      const yml = yaml_to_hier(monaco.editor.getModels()[0].getValue())\n      hier_to_dom(yml,'#hierlist')\n    } catch(e) {}\n  })\n  monaco.editor.getModels()[0].setValue(hier_to_yaml(hier))\n}","data":null}]}}</script>
+  </div>
+</div>
+<script>
+// crude but functioning hierarchy to yaml converter
+function hier_to_yaml(hier) {
+  let yaml_arr = []
+  hier.eachBefore(d => {
+    if(d.depth === 0) return
+    let indent = new Array(d.depth - 1).fill('  ').join('')
+    if(d.height > 0) yaml_arr.push(indent + d.data.name + ':')
+    if(d.height === 0) yaml_arr.push(indent + '- ' + d.data.name)
+  })
+  return yaml_arr.join('\n')
+}
+
+// crude but functioning yaml/JSON to hierarchy converter
+function yaml_to_hier(yaml) {
+  const yme = Object.entries(jsyaml.load(yaml));
+  const ym1 = {
+    name: 'dictionary',
+    children: yme.map( d => ({name: d[0], children: Array.isArray(d[1]) ? d[1].map( dd => ({name: dd}) ) : Object.entries(d[1])}))
+  }
+  d3.Node.prototype.eachAfter.call(ym1, d => {
+    if(!d.name) {
+      if(Array.isArray(d[1])) {
+        d.name = d[0]; d.children= d[1].map( dd => ({name: dd}) );
+      } else {
+        d.name = d[0]; d.children= Object.entries(d[1]);
+      }
+    }
+  })
+  d3.Node.prototype.eachAfter.call(ym1, d => {
+    if(d.depth > 0 && d.children) {
+      d.children = d.children.map(({name, children}) => (children ? {name, children} : {name}))
+    }
+  })
+  return d3.hierarchy(ym1)
+}
+</script>
+<script>
+// unnecessary since we have a flat conversion for data.frame
+//  but keep for now in case we want to use
+const hier = d3.hierarchy({"name":"dictionary","children":[{"name":"CULTURE","children":[{"name":"CULTURE-HIGH","children":[{"name":"art"},{"name":"artistic"},{"name":"dance"},{"name":"galler*"},{"name":"museum*"},{"name":"music*"},{"name":"opera*"},{"name":"theatre*"}]},{"name":"CULTURE-POPULAR","children":[{"name":"media"}]},{"name":"SPORT","children":[{"name":"angler*"}]}]},{"name":"ECONOMY","children":[{"name":"+STATE+","children":[{"name":"accommodation"},{"name":"age"},{"name":"ambulance"},{"name":"assist"},{"name":"benefit"},{"name":"care"},{"name":"carer*"},{"name":"child*"},{"name":"class"},{"name":"classes"},{"name":"clinics"},{"name":"collective*"},{"name":"contribution*"},{"name":"cooperative*"},{"name":"co-operative*"},{"name":"deprivation"},{"name":"disabilities"},{"name":"disadvantaged"},{"name":"educat*"},{"name":"elderly"},{"name":"equal*"},{"name":"establish"},{"name":"fair*"},{"name":"guarantee*"},{"name":"hardship"},{"name":"health*"},{"name":"homeless*"},{"name":"hospital*"},{"name":"hunger"},{"name":"inequal*"},{"name":"invest"},{"name":"investing"},{"name":"investment"},{"name":"means-test*"},{"name":"nurse*"},{"name":"patients"},{"name":"pension"},{"name":"poor"},{"name":"poorer"},{"name":"poorest"},{"name":"poverty"},{"name":"rehouse*"},{"name":"re-house*"},{"name":"school"},{"name":"teach*"},{"name":"transport"},{"name":"underfund*"},{"name":"unemploy*"},{"name":"vulnerable"},{"name":"widow*"}]},{"name":"=STATE=","children":[{"name":"accountant"},{"name":"accounting"},{"name":"accounts"},{"name":"advert*"},{"name":"airline*"},{"name":"airport*"},{"name":"audit*"},{"name":"bank*"},{"name":"bargaining"},{"name":"breadwinner*"},{"name":"budget*"},{"name":"buy*"},{"name":"cartel*"},{"name":"cash*"},{"name":"charge*"},{"name":"commerce*"},{"name":"compensat*"},{"name":"consum*"},{"name":"cost*"},{"name":"credit*"},{"name":"customer*"},{"name":"debt*"},{"name":"deficit*"},{"name":"dwelling*"},{"name":"earn*"},{"name":"econ*"},{"name":"electricity"},{"name":"estate*"},{"name":"export*"},{"name":"fee"},{"name":"fees"},{"name":"financ*"},{"name":"hous*"},{"name":"import"},{"name":"imports"},{"name":"industr*"},{"name":"jobs"},{"name":"lease*"},{"name":"loan*"},{"name":"manufactur*"},{"name":"mortgage*"},{"name":"negotiat*"},{"name":"opportunity"},{"name":"partnership*"},{"name":"passenger*"},{"name":"pay*"},{"name":"performance"},{"name":"port*"},{"name":"productivity"},{"name":"profession*"},{"name":"purchas*"},{"name":"railway*"},{"name":"rebate*"},{"name":"recession*"},{"name":"research*"},{"name":"revenue*"},{"name":"salar*"},{"name":"sell*"},{"name":"settlement"},{"name":"software"},{"name":"supplier*"},{"name":"supply"},{"name":"telecom*"},{"name":"telephon*"},{"name":"tenan*"},{"name":"touris*"},{"name":"trade"},{"name":"train*"},{"name":"wage*"},{"name":"welfare"},{"name":"work*"}]},{"name":"-STATE-","children":[{"name":"assets"},{"name":"autonomy"},{"name":"barrier*"},{"name":"bid"},{"name":"bidders"},{"name":"bidding"},{"name":"burden*"},{"name":"charit*"},{"name":"choice*"},{"name":"compet*"},{"name":"confidence"},{"name":"confiscatory"},{"name":"constrain*"},{"name":"contracting*"},{"name":"contractor*"},{"name":"controlled"},{"name":"controlling"},{"name":"controls"},{"name":"corporate"},{"name":"corporation*"},{"name":"deregulating"},{"name":"dismantl*"},{"name":"entrepreneur*"},{"name":"expensive"},{"name":"flexib*"},{"name":"franchise*"},{"name":"fundhold*"},{"name":"fund-holding"},{"name":"homestead*"},{"name":"initiative"},{"name":"intrusive"},{"name":"investor*"},{"name":"liberali*"},{"name":"market*"},{"name":"monetary"},{"name":"money"},{"name":"own*"},{"name":"private"},{"name":"privately"},{"name":"privatisations"},{"name":"privatised"},{"name":"privatising"},{"name":"produce*"},{"name":"profitable"},{"name":"regulat*"},{"name":"retail*"},{"name":"risk"},{"name":"risks"},{"name":"savings"},{"name":"sell*"},{"name":"shares"},{"name":"simplif*"},{"name":"spend*"},{"name":"sponsorship"},{"name":"taxable"},{"name":"taxes"},{"name":"tax-free"},{"name":"thrift*"},{"name":"trading"},{"name":"value"},{"name":"volunt*"},{"name":"voucher*"}]}]},{"name":"ENVIRONMENT","children":[{"name":"CON ENVIRONMENT","children":[{"name":"produc*"}]},{"name":"PRO ENVIRONMENT","children":[{"name":"car"},{"name":"catalytic"},{"name":"chemical*"},{"name":"chimney*"},{"name":"clean*"},{"name":"congestion"},{"name":"cyclist*"},{"name":"deplet*"},{"name":"ecolog*"},{"name":"emission*"},{"name":"energy-saving"},{"name":"environment*"},{"name":"fur"},{"name":"green"},{"name":"habitat*"},{"name":"hedgerow*"},{"name":"husbanded"},{"name":"litter*"},{"name":"opencast"},{"name":"open-cast*"},{"name":"ozone"},{"name":"planet"},{"name":"population"},{"name":"recycl*"},{"name":"re-cycl*"},{"name":"re-use"},{"name":"toxic"},{"name":"warming"}]}]},{"name":"GROUPS","children":[{"name":"ETHNIC","children":[{"name":"asian*"},{"name":"buddhist*"},{"name":"ethnic*"},{"name":"race"},{"name":"raci*"}]},{"name":"WOMEN","children":[{"name":"girls"},{"name":"woman"},{"name":"women"}]}]},{"name":"INSTITUTIONS","children":[{"name":"CONSERVATIVE","children":[{"name":"authority"},{"name":"continu*"},{"name":"disrupt*"},{"name":"inspect*"},{"name":"jurisdiction*"},{"name":"legitimate"},{"name":"manag*"},{"name":"moratorium"},{"name":"rul*"},{"name":"strike*"},{"name":"whitehall"}]},{"name":"NEUTRAL","children":[{"name":"administr*"},{"name":"advis*"},{"name":"agenc*"},{"name":"amalgamat*"},{"name":"appoint*"},{"name":"assembly"},{"name":"chair*"},{"name":"commission*"},{"name":"committee*"},{"name":"constituen*"},{"name":"council*"},{"name":"department*"},{"name":"directorate*"},{"name":"executive*"},{"name":"headquarters"},{"name":"legislat*"},{"name":"mechanism*"},{"name":"minister*"},{"name":"office"},{"name":"offices"},{"name":"official"},{"name":"operat*"},{"name":"opposition"},{"name":"organisation*"},{"name":"parliament*"},{"name":"presiden*"},{"name":"procedur*"},{"name":"process*"},{"name":"queen"},{"name":"regist*"},{"name":"scheme*"},{"name":"secretariat*"},{"name":"sovereign*"},{"name":"subcommittee*"},{"name":"tribunal*"},{"name":"vote*"},{"name":"voting"},{"name":"westminster"}]},{"name":"RADICAL","children":[{"name":"abolition"},{"name":"accountable"},{"name":"answerable"},{"name":"consult*"},{"name":"corrupt*"},{"name":"democratic*"},{"name":"elect*"},{"name":"implement*"},{"name":"modern*"},{"name":"monitor*"},{"name":"rebuild*"},{"name":"reexamine*"},{"name":"reform*"},{"name":"re-organi*"},{"name":"repeal*"},{"name":"replace*"},{"name":"representat*"},{"name":"scandal*"},{"name":"scrap"},{"name":"scrap*"},{"name":"scrutin*"},{"name":"transform*"},{"name":"voice*"}]}]},{"name":"LAW_AND_ORDER","children":[{"name":"LAW-CONSERVATIVE","children":[{"name":"assaults"},{"name":"bail"},{"name":"burglar*"},{"name":"constab*"},{"name":"convict*"},{"name":"court"},{"name":"courts"},{"name":"custod*"},{"name":"dealing"},{"name":"delinquen*"},{"name":"deter"},{"name":"deter*"},{"name":"disorder"},{"name":"drug*"},{"name":"fine"},{"name":"fines"},{"name":"firmness"},{"name":"force*"},{"name":"fraud*"},{"name":"guard*"},{"name":"hooligan*"},{"name":"illegal*"},{"name":"intimidat*"},{"name":"joy-ride*"},{"name":"lawless*"},{"name":"magistrat*"},{"name":"offence*"},{"name":"officer*"},{"name":"penal*"},{"name":"police"},{"name":"policemen"},{"name":"policing"},{"name":"prison*"},{"name":"probation"},{"name":"prosecution"},{"name":"punish*"},{"name":"re-offend"},{"name":"ruc"},{"name":"seiz*"},{"name":"sentence*"},{"name":"shop-lifting"},{"name":"squatting"},{"name":"terror*"},{"name":"theft*"},{"name":"thug*"},{"name":"tough*"},{"name":"trafficker*"},{"name":"uniformed"},{"name":"unlawful"},{"name":"vandal*"},{"name":"victim*"},{"name":"vigilan*"}]},{"name":"LAW-LIBERAL","children":[{"name":"harassment"},{"name":"non-custodial"}]}]},{"name":"RURAL","children":[{"name":"agricultur*"},{"name":"badgers"},{"name":"bird*"},{"name":"countryside"},{"name":"farm*"},{"name":"feed"},{"name":"fish*"},{"name":"forest*"},{"name":"hens"},{"name":"horse*"},{"name":"landscape*"},{"name":"lane*"},{"name":"livestock"},{"name":"meadows"},{"name":"village*"},{"name":"wildlife"}]},{"name":"URBAN","children":[{"name":"town*"}]},{"name":"VALUES","children":[{"name":"CONSERVATIVE","children":[{"name":"defend"},{"name":"defended"},{"name":"defending"},{"name":"discipline"},{"name":"glories"},{"name":"glorious"},{"name":"grammar"},{"name":"heritage"},{"name":"histor*"},{"name":"honour*"},{"name":"immigra*"},{"name":"inherit*"},{"name":"integrity"},{"name":"jubilee*"},{"name":"leader*"},{"name":"maintain"},{"name":"majesty"},{"name":"marriage"},{"name":"obscen*"},{"name":"past"},{"name":"pornograph*"},{"name":"preserv*"},{"name":"pride"},{"name":"principl*"},{"name":"probity"},{"name":"professionalism"},{"name":"proud"},{"name":"punctual*"},{"name":"recapture*"},{"name":"reliab*"},{"name":"threat*"},{"name":"tradition*"}]},{"name":"LIBERAL","children":[{"name":"cruel*"},{"name":"discriminat*"},{"name":"human*"},{"name":"injustice*"},{"name":"innocent"},{"name":"inter_racial"},{"name":"minorit*"},{"name":"repressi*"},{"name":"rights"},{"name":"sex*"}]}]}]})
+function hier_to_dom(hier, selector) {
+  const sel = d3.select(selector)
+  // clear selected
+  //   need to refine to use d3 enter, exit, update pattern
+  //   partially implemented at the leaf level
+  sel.selectAll("*").remove()
+  let parentdiv  // there is a better way of doing this but keep simple and ugly for now
+
+  hier.eachBefore(d => {
+    if(d.depth === 0) return  // ignore root
+    if(d.height === 0) return // ignore leaves since handled at parent level
+    if(d.height === 1) {
+      const parent_el = parentdiv
+        .append("div")
+        .datum(d)
+        .text(`${d.data.name} (${d.leaves().length})`)
+        .style("margin-left", d.depth * 10 + "px")
+        .style("margin-top", "5px")
+        //.style("font-size", "1.25em")
+        //.style("font-weight","bold")
+        .append("div")
+          .style("width", "100%")
+          .style("display", "flex")
+          .style("flex-wrap", "wrap")
+          //.style("overflow-x","auto")
+          //.style("overflow-y","hidden")
+          .style("margin-left", (d.depth + 1) * 10 + "px")
+          .style("margin-top", "5px")
+          .style("margin-bottom", "5px")
+
+      const tagify_el = parent_el
+        .append("input")
+        .attr("type", "tags")
+
+      const tagify = new Tagify(tagify_el.node())
+      tagify.addTags(d.leaves().map( d => d.data.name ))
+      // attach tagify to tagify html element with expando property
+      tagify_el.tagify = tagify
+    } else {
+      parentdiv = sel
+        .append("div")
+        .text(`${d.data.name} (${d.leaves().length})`)
+        .style("margin-left", d.depth * 10 + "px")
+        .style("font-size", "1.25em")
+        .style("font-weight","bold")
+    }
+  })
+}
+</script>
+</body>
+</html>
