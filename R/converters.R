@@ -83,11 +83,11 @@ convert_dict_flat <- function(dict) {
                   sp <- unlist(strsplit(tail(rw, 1), split = ":"))
                   rw <- c(empties, head(sp, 1))
                   if (length(unlist(sp)) > 1) {
-                    rw2 <- c(empties, "", tail(sp, 1))
+                    rw2 <- c(empties, "", trimws(tail(sp, 1)))
                   }
                 }
                 df <- data.frame(structure(as.list(c(
-                  gsub(rw, pattern = "^(- )", replacement = ""), pad
+                  trimws(gsub(rw, pattern = "^(- )", replacement = "")), pad
                 )),
                 names = paste0("level", 1:height)),
                 stringsAsFactors = FALSE)
@@ -115,7 +115,7 @@ convert_dict_flat <- function(dict) {
                    if (notblank > 1) {
                      rw[(1:(notblank - 1))] <- filler[(1:(notblank - 1))]
                    }
-                   filler[notblank] <<- rw[notblank]
+                   filler[notblank] <<- trimws(rw[notblank])
                    return(data.frame(as.list(rw), stringsAsFactors = FALSE))
                  })))
 }
