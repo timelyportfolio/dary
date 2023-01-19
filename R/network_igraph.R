@@ -27,7 +27,12 @@ nodes <- data.frame(name=unique(unlist(dict_corrosion_flat[,c("level2","level3")
 nodes <- nodes[which(nodes$name != ""),]
 links <- dict_corrosion_flat[which(dict_corrosion_flat$level3 != ""),c("level2","level3")][,c(2,1)]
 colnames(links) <- c("from","to")
-ig <- igraph::graph_from_data_frame(links, vertices=nodes)
+links$from <- match(links$from, nodes)
+links$to <- match(links$to, nodes)
+ig <- igraph::graph_from_data_frame(links)
+# set a value and group only so robservable second works
+V(ig)$group <- 1
+E(ig)$value <- 1
 
 robservable(
   "https://observablehq.com/@mbostock/hello-cola",
@@ -35,8 +40,20 @@ robservable(
   include = "chart"
 )
 
+# some transformation so it works with a sortable adjacency matrix
+ig_d3 <- d3r::d3_igraph(ig, json=FALSE)
+ig_d3$nodes$name <- nodes
+ig_d3$nodes$id <- as.numeric(ig_d3$nodes$id)
+ig_d3$links$source <- as.numeric(ig_d3$links$source)
+ig_d3$links$target <- as.numeric(ig_d3$links$target)
+robservable(
+  "https://observablehq.com/d/36f9ac199d2228db",
+  input = list(
+    graph = jsonlite::toJSON(ig_d3, dataframe="rows", auto_unbox=TRUE), height = 1000)
+)
+
 # add label to vertices so dot format will show words not id numbers
-V(ig)$label <- names(V(ig))
+V(ig)$label <- nodes[as.numeric(names(V(ig)))]
 # color by out degree
 deg <- degree(ig, mode="out")
 # highlight those with out degree > 1
