@@ -49,7 +49,13 @@ ig_d3$links$target <- as.numeric(ig_d3$links$target)
 robservable(
   "https://observablehq.com/d/36f9ac199d2228db",
   input = list(
-    graph = jsonlite::toJSON(ig_d3, dataframe="rows", auto_unbox=TRUE), height = 1000)
+    graph = jsonlite::toJSON(ig_d3, dataframe="rows", auto_unbox=TRUE))
+)
+
+robservable(
+  "https://observablehq.com/d/199c65dc4ba270ac",
+  input = list(
+    graph = jsonlite::toJSON(ig_d3, dataframe="rows", auto_unbox=TRUE))
 )
 
 # add label to vertices so dot format will show words not id numbers
