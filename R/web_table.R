@@ -12,11 +12,11 @@ dictfile <- tempfile()
 download.file("https://provalisresearch.com/Download/LaverGarry.zip",dictfile, mode = "wb")
 unzip(dictfile, exdir = (td <- tempdir()))
 dict2 <- dictionary(file = paste(td, "LaverGarry.cat", sep = "/"))
-dict_hier <- convert_dict_hier(dict2)
+dict_hier <- dary::convert_dict_hier(dict2)
 
 html_block <- tagList(
   d3r::d3_dep_v7(),
-  reactable::reactable(elementId = "tbl", convert_dict_flat(dict2), pagination = FALSE),
+  reactable::reactable(elementId = "tbl", dary::convert_dict_flat(dict2), pagination = FALSE),
   tags$script(HTML(
     sprintf(
       '
