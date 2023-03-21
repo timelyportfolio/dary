@@ -11,6 +11,19 @@ html_block <- tagList(
                 "stylesheet", type = "text/css"),
     tags$script(
       '
+// crude but functioning hierarchy to yaml converter
+function dom_to_yaml() {
+  const builder_groups = d3.selectAll(".dictionary-builder-group")
+  const yaml_arr = []
+  builder_groups.each(function() {
+    yaml_arr.push(`${d3.select(this).select("h3").text()}:`)
+    d3.select(this).selectAll("tags.tagify tag").each(function() {
+      yaml_arr.push("  - " + d3.select(this).attr("value"))
+    })
+  })
+  return yaml_arr.join("\\n")
+}
+
 function delete_group(evt) {
   d3.select(evt.target.parentElement.parentElement).remove()
 }
@@ -46,6 +59,7 @@ function add_group(evt) {
   const tagify_el = leavesdiv
     .append("input")
     .attr("type", "tags")
+    .attr("placeholder", "add more terms")
 
   const tagify = new Tagify(tagify_el.node())
   tagify.addTags(["word1","word2"])
