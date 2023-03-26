@@ -122,6 +122,10 @@ dictionary_builder_html <- function(id = NULL) {
   browsable(html_block)
 }
 
+### html example ----
+# dictionary_builder_html("dictionary")
+
+### Shiny example ----
 # library(shiny)
 # shinyApp(ui= dictionary_builder_html("dictionary"), server = function(input, output, session) {
 #     observeEvent(input$dictionary, {print(input$dictionary)})
