@@ -2,14 +2,18 @@
 library(htmltools)
 library(d3r)
 
+# should we add ability to use existing dictionary
 dictionary_builder_html <- function(id = NULL) {
   html_block <- tagList(
     d3r::d3_dep_v7(),
     tags$head(
       tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify"),
       tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"),
-      tags$link(href = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css", rel =
-                  "stylesheet", type = "text/css"),
+      tags$link(
+        href = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css",
+        rel = "stylesheet",
+        type = "text/css"
+      ),
       tags$script(HTML(
         '
   // crude but functioning hierarchy to yaml converter
@@ -41,6 +45,7 @@ dictionary_builder_html <- function(id = NULL) {
       }
     }
   }
+
   function delete_group(evt) {
     d3.select(evt.target.parentElement.parentElement).remove()
     update_monaco_shiny()
@@ -59,6 +64,7 @@ dictionary_builder_html <- function(id = NULL) {
       .style("display", "inline")
       .attr("contenteditable",true)
       .text("Group")
+      .on("input", function() {update_monaco_shiny()});
 
     // change this to trash icon
     leveldiv
