@@ -9,7 +9,7 @@ html_block <- tagList(
     tags$script(src = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"),
     tags$link(href = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css", rel =
                 "stylesheet", type = "text/css"),
-    tags$script(
+    tags$script(HTML(
       '
 // crude but functioning hierarchy to yaml converter
 function dom_to_yaml() {
@@ -24,8 +24,17 @@ function dom_to_yaml() {
   return yaml_arr.join("\\n")
 }
 
+// update monaco editor on change
+function update_monaco() {
+  try {
+    monaco.editor.getModels()[0].setValue(dom_to_yaml())
+  } catch(e) {
+    console.log("update monaco failed", e)
+  }
+}
 function delete_group(evt) {
   d3.select(evt.target.parentElement.parentElement).remove()
+  update_monaco()
 }
 
 function add_group(evt) {
@@ -61,22 +70,36 @@ function add_group(evt) {
     .attr("type", "tags")
     .attr("placeholder", "add more terms")
 
-  const tagify = new Tagify(tagify_el.node())
+  const tagify = new Tagify(tagify_el.node(), {
+    callbacks: {
+      "change": () => {update_monaco()},
+    }
+  })
   tagify.addTags(["word1","word2"])
 }
 '
     )
+  )),
+  tags$div(
+    style = "display: flex; max-height: 95vh;",
+    tags$div(
+      class = "dictionary-builder",
+      style = "width: 50%; overflow-y: auto;",
+      tags$div(
+        class = "dictionary-builder-tree",
+        style = "width: 100%; min-height: 20px;"
+      ),
+      tags$div(style = "margin-top:10px;"),
+      tags$button(
+        class = "btn btn-primary",
+        onclick = "add_group()","Add Group"
+      )
+    ),
+    tags$div(
+      style = "min-width:50%; min-height:95vh;",
+      monaco::monaco("", language = "yaml", width = "100%")
+    )
   ),
-tags$div(
-  class = "dictionary-builder",
-  style = "width: 100%;",
-  tags$div(class = "dictionary-builder-tree",
-           style = "width: 100%; min-height: 20px;"),
-  tags$div(style = "margin-top:10px;"),
-  tags$button(class = "btn btn-primary",
-              onclick = "add_group()",
-              "Add Group")
-)
 )
 
 
