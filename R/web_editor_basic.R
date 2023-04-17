@@ -2,8 +2,16 @@
 library(htmltools)
 library(d3r)
 
+dict <- quanteda::dictionary(
+  list(
+    terror = c("terrorism", "terrorists", "threat"),
+    economy = c("jobs","business", "grow", "work")
+  )
+)
+dict_hier <- dary::convert_dict_hier(dict)
+
 # should we add ability to use existing dictionary
-dictionary_builder_html <- function(id = NULL) {
+dictionary_builder_html <- function(id = NULL, dict = NULL) {
   html_block <- tagList(
     d3r::d3_dep_v7(),
     tags$head(
@@ -13,9 +21,33 @@ dictionary_builder_html <- function(id = NULL) {
         href = "https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css",
         rel = "stylesheet",
         type = "text/css"
-      ),
-      tags$script(HTML(
-        '
+      )
+    ),
+    {tags$div(
+      style = "display: flex; max-height: 95vh;",
+      id = id,
+      {tags$div(
+        class = "dictionary-builder",
+        style = "width: 50%; overflow-y: auto;",
+        tags$div(
+          class = "dictionary-builder-tree",
+          style = "width: 100%; min-height: 20px;"
+        ),
+        tags$div(style = "margin-top:10px;"),
+        tags$button(
+          class = "btn btn-primary",
+          onclick = "add_group()","Add Group"
+        )
+      )},
+      {tags$div(
+        style = "min-width:50%; min-height:95vh;",
+        monaco::monaco("", language = "yaml", width = "100%")
+      )}
+    )},
+    tags$script(HTML(
+sprintf(
+{'
+  var dict = %s;
   // crude but functioning hierarchy to yaml converter
   function dom_to_yaml() {
     const builder_groups = d3.selectAll(".dictionary-builder-group")
@@ -39,7 +71,7 @@ dictionary_builder_html <- function(id = NULL) {
     }
 
     if(typeof(window.Shiny) !== "undefined" &&  Shiny.hasOwnProperty("setInputValue")) {
-      var id = d3.select(d3.select(".dictionary-builder").node().parentNode).attr("id")
+      var id = d3.select(d3.select(".dictionary-builder-tree").node().parentNode).attr("id")
       if(id) {
         Shiny.setInputValue(id, dict_yml)
       }
@@ -51,8 +83,9 @@ dictionary_builder_html <- function(id = NULL) {
     update_monaco_shiny()
   }
 
-  function add_group(evt) {
-    const tree = d3.select(this.event.target.parentElement.parentElement).select(".dictionary-builder-tree")
+  function add_group(el, group={name: "Group", terms: ["word1", "word2"]}) {
+    const tree = el ? d3.select(el) : d3.select(this.event.target.parentElement.parentElement).select(".dictionary-builder-tree")
+
     const leveldiv = tree
       .append("div")
       .classed("dictionary-builder-group", true)
@@ -63,7 +96,7 @@ dictionary_builder_html <- function(id = NULL) {
       .style("margin", "0px")
       .style("display", "inline")
       .attr("contenteditable",true)
-      .text("Group")
+      .text(group.name)
       .on("input", function() {update_monaco_shiny()});
 
     // change this to trash icon
@@ -76,7 +109,7 @@ dictionary_builder_html <- function(id = NULL) {
 
     const leavesdiv = leveldiv
       .append("div")
-        .style("width", "100%")
+        .style("width", "100%%")
         .style("display", "flex")
         .style("flex-wrap", "wrap")
 
@@ -88,34 +121,22 @@ dictionary_builder_html <- function(id = NULL) {
     const tagify = new Tagify(tagify_el.node(), {
       callbacks: {
         "change": () => {update_monaco_shiny()},
+        "remove": () => {update_monaco_shiny()},
       }
     })
-    tagify.addTags(["word1","word2"])
+    tagify.addTags(group.terms)
   }
-  '
-      )
-    )),
-    tags$div(
-      style = "display: flex; max-height: 95vh;",
-      id = id,
-      tags$div(
-        class = "dictionary-builder",
-        style = "width: 50%; overflow-y: auto;",
-        tags$div(
-          class = "dictionary-builder-tree",
-          style = "width: 100%; min-height: 20px;"
-        ),
-        tags$div(style = "margin-top:10px;"),
-        tags$button(
-          class = "btn btn-primary",
-          onclick = "add_group()","Add Group"
-        )
-      ),
-      tags$div(
-        style = "min-width:50%; min-height:95vh;",
-        monaco::monaco("", language = "yaml", width = "100%")
-      )
-    ),
+
+  // if provided a dictionary then add to the ui
+  if(dict) {
+    dict.children.forEach(function(grp) {
+      add_group(".dictionary-builder-tree", {name:grp.name, terms: grp.children.map(d => d.name)})
+    })
+  }
+'},
+jsonlite::toJSON(dict, auto_unbox = TRUE, null = "null")
+)
+    ))
   )
 
 
