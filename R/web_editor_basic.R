@@ -97,6 +97,14 @@ sprintf(
       .style("display", "inline")
       .attr("contenteditable",true)
       .text(group.name)
+      // on enter end edit instead of add new line
+      .on("keydown", function(evt) {
+        if (evt.keyCode == 13) {
+          evt.preventDefault()
+          this.removeAttribute("contenteditable")
+          d3.select(this).attr("contenteditable",true)
+        }
+      })
       .on("input", function() {update_monaco_shiny()});
 
     // change this to trash icon
