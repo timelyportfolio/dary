@@ -98,8 +98,9 @@ sprintf(
       .attr("contenteditable",true)
       .text(group.name)
       // on enter end edit instead of add new line
+      //  on escape end edit
       .on("keydown", function(evt) {
-        if (evt.keyCode == 13) {
+        if (evt.keyCode == 13 || evt.keyCode == 27) {
           evt.preventDefault()
           this.removeAttribute("contenteditable")
           d3.select(this).attr("contenteditable",true)
