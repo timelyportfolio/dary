@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+<script src="lib/d3-7.0.0/d3.min.js"></script>
+<script src="lib/htmlwidgets-1.6.2/htmlwidgets.js"></script>
+<script src="lib/monaco-editor-0.21.2/monaco.min.js"></script>
+<script src="lib/prettier-2.1.2/standalone.js"></script>
+<script src="lib/prettier-2.1.2/parser-babel.js"></script>
+<script src="lib/prettier-2.1.2/parser-html.js"></script>
+<script src="lib/prettier-2.1.2/parser-markdown.js"></script>
+<script src="lib/prettier-2.1.2/parser-postcss.js"></script>
+<script src="lib/prettier-2.1.2/parser-typescript.js"></script>
+<script src="lib/prettier-2.1.2/parser-yaml.js"></script>
+<script src="lib/jquery-3.5.1/jquery.min.js"></script>
+<link href="lib/jQueryModal-0.9.2/jquery.modal.min.css" rel="stylesheet" />
+<script src="lib/jQueryModal-0.9.2/jquery.modal.min.js"></script>
+<link href="lib/sweetalert2-10.5.1/sweetalert2.min.css" rel="stylesheet" />
+<script src="lib/sweetalert2-10.5.1/sweetalert2.min.js"></script>
+<script src="lib/markdown-it-12.0.0/markdown-it.min.js"></script>
+<script src="lib/svg-parser-2.0.4/svg-parser-bundle.js"></script>
+<script src="lib/scale-that-svg-1.0.5/scale-that-svg-bundle.js"></script>
+<script src="lib/panzoom-9.2.5/panzoom.min.js"></script>
+<script src="lib/word-wrap-1.2.3/word-wrap-bundle.js"></script>
+<link href="lib/github-markdown-css-4.0.0/github-markdown.css" rel="stylesheet" />
+<link href="lib/monacoWidget-0.0.0/MW.css" rel="stylesheet" />
+<script src="lib/monacoWidget-0.0.0/MW.js"></script>
+<link href="lib/customRangeInput-1.5.2/customRangeInput.css" rel="stylesheet" />
+<script src="lib/monaco-binding-0.2.2/monaco.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.polyfills.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css"/>
+</head>
+<body>
+<div style="display: flex; max-height: 95vh;">
+  <div class="dictionary-builder" style="width: 50%; overflow-y: auto;">
+    <div class="dictionary-builder-tree" style="width: 100%; min-height: 20px;"></div>
+    <div style="margin-top:10px;"></div>
+    <button class="btn btn-primary" onclick="add_group()">Add Group</button>
+  </div>
+  <div style="min-width:50%; min-height:95vh;">
+    <div class="monacoWidget">
+      <div id="modalMWmDOb9ddekca7nyK" class="modal markdown-body"></div>
+      <div class="monacoWidgetHeader">
+        <div id="checkboxMWmDOb9ddekca7nyK" class="check-box-container" style="display: none;">
+          <input id="bookmarkMWmDOb9ddekca7nyK" type="checkbox" class="check-box-input" checked=""/>
+          <label for="bookmarkMWmDOb9ddekca7nyK" class="check-box" style="margin-right: 0;"></label>
+          <label for="bookmarkMWmDOb9ddekca7nyK" class="check-box-label">
+            <span style="color: whitesmoke;">Always bookmark before prettifying</span>
+          </label>
+        </div>
+        <span id="fileNameMWmDOb9ddekca7nyK"></span>
+        <div style="clear: both;"></div>
+      </div>
+      <div id="MWmDOb9ddekca7nyK" class="monaco html-widget " style="width:100%;height:calc(100vh - 50px);"></div>
+    </div>
+    <script type="application/json" data-for="MWmDOb9ddekca7nyK">{"x":{"contents":[""],"language":"yaml","theme":"vs","tabSize":2,"fontSize":14,"header":true,"fileName":"untitled.yaml","fileExtension":"yaml"},"evals":[],"jsHooks":[]}</script>
+  </div>
+</div>
+<script>
+  var dict = null;
+  // crude but functioning hierarchy to yaml converter
+  function dom_to_yaml() {
+    const builder_groups = d3.selectAll(".dictionary-builder-group")
+    const yaml_arr = []
+    builder_groups.each(function() {
+      yaml_arr.push(`${d3.select(this).select("h3").text()}:`)
+      d3.select(this).selectAll("tags.tagify tag").each(function() {
+        yaml_arr.push("  - " + d3.select(this).attr("value"))
+      })
+    })
+    return yaml_arr.join("\n")
+  }
+
+  // update monaco editor and send shiny on change
+  function update_monaco_shiny() {
+    var dict_yml = dom_to_yaml()
+    try {
+      monaco.editor.getModels()[0].setValue(dict_yml)
+    } catch(e) {
+      console.log("update monaco failed", e)
+    }
+
+    if(typeof(window.Shiny) !== "undefined" &&  Shiny.hasOwnProperty("setInputValue")) {
+      var id = d3.select(d3.select(".dictionary-builder-tree").node().parentNode).attr("id")
+      if(id) {
+        Shiny.setInputValue(id, dict_yml)
+      }
+    }
+  }
+
+  function delete_group(evt) {
+    d3.select(evt.target.parentElement.parentElement).remove()
+    update_monaco_shiny()
+  }
+
+  function add_group(el, group={name: "Group", terms: ["word1", "word2"]}) {
+    const tree = el ? d3.select(el) : d3.select(this.event.target.parentElement.parentElement).select(".dictionary-builder-tree")
+
+    const leveldiv = tree
+      .append("div")
+      .classed("dictionary-builder-group", true)
+      .style("margin-top", "5px")
+
+    leveldiv
+      .append("h3")
+      .style("margin", "0px")
+      .style("display", "inline")
+      .style("cursor", "text")
+      .attr("contenteditable",true)
+      .text(group.name)
+      // on enter end edit instead of add new line
+      //  on escape end edit
+      .on("keydown", function(evt) {
+        if (evt.keyCode == 13 || evt.keyCode == 27) {
+          evt.preventDefault()
+          this.removeAttribute("contenteditable")
+          d3.select(this).attr("contenteditable",true)
+        }
+      })
+      .on("input", function() {update_monaco_shiny()});
+
+    // change this to trash icon
+    leveldiv
+      .append("span")
+      .style("margin-left","2px")
+      .append("button")
+      .text("delete")
+      .on("click", delete_group)
+
+    const leavesdiv = leveldiv
+      .append("div")
+        .style("width", "100%")
+        .style("display", "flex")
+        .style("flex-wrap", "wrap")
+
+    const tagify_el = leavesdiv
+      .append("input")
+      .attr("type", "tags")
+      .attr("placeholder", "add more terms")
+
+    const tagify = new Tagify(tagify_el.node(), {
+      callbacks: {
+        "change": () => {update_monaco_shiny()},
+        "remove": () => {update_monaco_shiny()},
+      }
+    })
+    tagify.addTags(group.terms)
+  }
+
+  // if provided a dictionary then add to the ui
+  if(dict) {
+    dict.children.forEach(function(grp) {
+      add_group(".dictionary-builder-tree", {name:grp.name, terms: grp.children.map(d => d.name)})
+    })
+  }
+</script>
+</body>
+</html>
