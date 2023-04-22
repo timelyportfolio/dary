@@ -1,3 +1,4 @@
+# remotes::install_github("timelyportfolio/monaco")
 # library(bslib)
 library(htmltools)
 library(d3r)
@@ -41,7 +42,7 @@ dictionary_builder_html <- function(id = NULL, dict = NULL) {
       )},
       {tags$div(
         style = "min-width:50%; min-height:95vh;",
-        monaco::monaco("", language = "yaml", width = "100%")
+        monaco::monaco("", language = "yaml", width = "100%", readOnly = TRUE)
       )}
     )},
     tags$script(HTML(
